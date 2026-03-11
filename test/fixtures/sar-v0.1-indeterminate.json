@@ -1,0 +1,22 @@
+{
+  "description": "SAR v0.1 INDETERMINATE fixture (honest ambiguity test vector)",
+  "sar_version": "0.1",
+  "input": {
+    "task_id_hash": "sha256:fixture-task-001",
+    "verdict": "INDETERMINATE",
+    "confidence": 0,
+    "reason_code": "SPEC_AMBIGUOUS",
+    "ts": "2026-02-14T12:00:00Z",
+    "verifier_kid": "xmandate-ed25519-test-01"
+  },
+  "canonical_json": "{\"confidence\":0,\"reason_code\":\"SPEC_AMBIGUOUS\",\"task_id_hash\":\"sha256:fixture-task-001\",\"ts\":\"2026-02-14T12:00:00Z\",\"verdict\":\"INDETERMINATE\",\"verifier_kid\":\"xmandate-ed25519-test-01\"}",
+  "receipt_id": "sha256:0e78d662bd90ce687a22006ff2b0f4ce9d303b93d9fe5246b01dec50592b13d9",
+  "public_key_kid": "xmandate-ed25519-test-01",
+  "sig": "base64url:OGV0ofAA_qRVuS1To0lIdYFmcSY2mhYgFzR6C9NZXoVobspsk8KKmKxSaW81gZiZxljB2DE8DDhx2fEpA2JCDg",
+  "verification_steps": [
+    "1. JCS-canonicalize `input` (RFC 8785).",
+    "2. Confirm it matches `canonical_json` byte-for-byte.",
+    "3. SHA256(canonical_json bytes) => receipt_id hex.",
+    "4. Verify Ed25519 signature over the hash bytes using public key from sar-keys.json."
+  ]
+}

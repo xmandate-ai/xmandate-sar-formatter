@@ -1,0 +1,22 @@
+{
+  "description": "SAR v0.1 PASS fixture (canonical test vector)",
+  "sar_version": "0.1",
+  "input": {
+    "task_id_hash": "sha256:fixture-task-001",
+    "verdict": "PASS",
+    "confidence": 1,
+    "reason_code": "SPEC_MATCH",
+    "ts": "2026-02-14T12:00:00Z",
+    "verifier_kid": "xmandate-ed25519-test-01"
+  },
+  "canonical_json": "{\"confidence\":1,\"reason_code\":\"SPEC_MATCH\",\"task_id_hash\":\"sha256:fixture-task-001\",\"ts\":\"2026-02-14T12:00:00Z\",\"verdict\":\"PASS\",\"verifier_kid\":\"xmandate-ed25519-test-01\"}",
+  "receipt_id": "sha256:ccda32b69654d199de11445d10bcf10f40c8c97bfff452990ed85f4a2d7f1782",
+  "public_key_kid": "xmandate-ed25519-test-01",
+  "sig": "base64url:p--HkrJoQ6hhsvCrBQUQ0X127eCWhLhzoA-P7J5Ufn3qpNbEsLSTeR4mEmdIywtFIZMZlCJK-lTFYtNw6ei4CQ",
+  "verification_steps": [
+    "1. JCS-canonicalize `input` (RFC 8785).",
+    "2. Confirm it matches `canonical_json` byte-for-byte.",
+    "3. SHA256(canonical_json bytes) => receipt_id hex.",
+    "4. Verify Ed25519 signature over the hash bytes using public key from sar-keys.json."
+  ]
+}

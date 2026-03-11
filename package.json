@@ -1,0 +1,39 @@
+{
+  "name": "xmandate-sar-formatter",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for SAR v0.1 (Settlement Attestation Receipt) — fixture-compatible with coinbase/x402 #1195",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check:no-external-verifier": "node scripts/no-external-verifier-check.mjs"
+  },
+  "dependencies": {
+    "@noble/ed25519": "^2.1.0",
+    "@noble/hashes": "^1.6.0",
+    "canonicalize": "^2.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xmandate-ai/xmandate-sar-formatter.git"
+  },
+  "homepage": "https://github.com/xmandate-ai/xmandate-sar-formatter",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  }
+}

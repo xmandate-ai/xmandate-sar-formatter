@@ -1,0 +1,11 @@
+{
+  "keys": [
+    {
+      "kid": "xmandate-ed25519-test-01",
+      "kty": "OKP",
+      "crv": "Ed25519",
+      "x": "RXM_zNUwGswdgebuLJltVibXrrHfOggnTObWXDurocI",
+      "created": "2026-03-11T18:56:29.485Z"
+    }
+  ]
+}
