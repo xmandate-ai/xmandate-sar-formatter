@@ -12,7 +12,7 @@
   "canonical_json": "{\"confidence\":1,\"reason_code\":\"SPEC_MATCH\",\"task_id_hash\":\"sha256:fixture-task-001\",\"ts\":\"2026-02-14T12:00:00Z\",\"verdict\":\"PASS\",\"verifier_kid\":\"xmandate-ed25519-test-01\"}",
   "receipt_id": "sha256:ccda32b69654d199de11445d10bcf10f40c8c97bfff452990ed85f4a2d7f1782",
   "public_key_kid": "xmandate-ed25519-test-01",
-  "sig": "base64url:p--HkrJoQ6hhsvCrBQUQ0X127eCWhLhzoA-P7J5Ufn3qpNbEsLSTeR4mEmdIywtFIZMZlCJK-lTFYtNw6ei4CQ",
+  "sig": "base64url:SoYeWXtAgd66ys9GMEWSa6wjVxfy72oGX_KMxztEW-fc7TReC8OQ0NJ4E3Q3FIbYL60truS--_OxpFZiYkGGBg",
   "verification_steps": [
     "1. JCS-canonicalize `input` (RFC 8785).",
     "2. Confirm it matches `canonical_json` byte-for-byte.",

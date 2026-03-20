@@ -1,7 +1,7 @@
 {
   "name": "xmandate-sar-formatter",
   "version": "0.1.0",
-  "description": "TypeScript SDK for SAR v0.1 (Settlement Attestation Receipt) — fixture-compatible with coinbase/x402 #1195",
+  "description": "TypeScript SDK for SAR v0.1 (Settlement Attestation Receipt) — portable execution proof for agent commerce",
   "type": "module",
   "exports": {
     ".": {

@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 /**
- * Regenerate all SAR v0.1 test fixtures with a new Ed25519 keypair
- * and kid = "xmandate-ed25519-test-01".
+ * Regenerate all SAR v0.1 test fixtures with a deterministic Ed25519 keypair.
+ *
+ * The keypair is derived from a fixed seed so that fixtures are stable
+ * across runs. This is critical for cross-implementation conformance:
+ * third parties validating against these fixtures need pinned values.
  *
  * Run: node scripts/regen-fixtures.mjs
  */
@@ -20,7 +23,16 @@ ed.etc.sha512Sync = (...m) => sha512(ed.etc.concatBytes(...m));
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = resolve(__dirname, '..', 'test', 'fixtures');
 
-const NEW_KID = 'xmandate-ed25519-test-01';
+const KID = 'xmandate-ed25519-test-01';
+const FIXED_CREATED = '2026-02-14T00:00:00Z';
+
+// ---------- Deterministic key material ----------
+// TEST KEY - NOT FOR PRODUCTION USE
+// Derived from SHA-256 of a fixed seed string for reproducibility.
+const privKey = new Uint8Array(
+  createHash('sha256').update('xmandate-sar-v0.1-test-fixtures').digest(),
+);
+const pubKey = await ed.getPublicKeyAsync(privKey);
 
 function base64urlEncode(bytes) {
   let binStr = '';
@@ -39,22 +51,18 @@ function sha256Hex(data) {
   return createHash('sha256').update(data).digest('hex');
 }
 
-// Generate new keypair
-const privKey = ed.utils.randomPrivateKey();
-const pubKey = await ed.getPublicKeyAsync(privKey);
-
-console.log(`New kid: ${NEW_KID}`);
+console.log(`kid: ${KID}`);
 console.log(`Public key (base64url): ${base64urlEncode(pubKey)}`);
 
-// Write sar-keys.json
+// ---------- sar-keys.json ----------
 const keysDoc = {
   keys: [
     {
-      kid: NEW_KID,
+      kid: KID,
       kty: 'OKP',
       crv: 'Ed25519',
       x: base64urlEncode(pubKey),
-      created: new Date().toISOString(),
+      created: FIXED_CREATED,
     },
   ],
 };
@@ -64,8 +72,23 @@ writeFileSync(
 );
 console.log('Wrote sar-keys.json');
 
-// Fixture definitions
-const fixtures = [
+// ---------- Helper: sign a core and return common fields ----------
+async function signCore(input) {
+  const canonicalJson = canonicalize(input);
+  const canonicalBytes = new TextEncoder().encode(canonicalJson);
+  const digestHex = sha256Hex(canonicalBytes);
+  const receiptId = `sha256:${digestHex}`;
+  const digest = sha256(canonicalBytes);
+  const sigBytes = await ed.signAsync(digest, privKey);
+  const sig = `base64url:${base64urlEncode(sigBytes)}`;
+  return { canonicalJson, receiptId, digest, sig, sigBytes };
+}
+
+// ============================================================
+// POSITIVE FIXTURES
+// ============================================================
+
+const positiveFixtures = [
   {
     file: 'sar-v0.1-pass.json',
     description: 'SAR v0.1 PASS fixture (canonical test vector)',
@@ -75,7 +98,7 @@ const fixtures = [
       confidence: 1,
       reason_code: 'SPEC_MATCH',
       ts: '2026-02-14T12:00:00Z',
-      verifier_kid: NEW_KID,
+      verifier_kid: KID,
     },
   },
   {
@@ -87,7 +110,7 @@ const fixtures = [
       confidence: 1,
       reason_code: 'SPEC_MISMATCH',
       ts: '2026-02-14T12:00:00Z',
-      verifier_kid: NEW_KID,
+      verifier_kid: KID,
     },
   },
   {
@@ -99,34 +122,23 @@ const fixtures = [
       confidence: 0,
       reason_code: 'SPEC_AMBIGUOUS',
       ts: '2026-02-14T12:00:00Z',
-      verifier_kid: NEW_KID,
+      verifier_kid: KID,
     },
   },
 ];
 
-for (const { file, description, input } of fixtures) {
-  // JCS canonicalize
-  const canonicalJson = canonicalize(input);
-
-  // SHA-256 of canonical bytes
-  const canonicalBytes = new TextEncoder().encode(canonicalJson);
-  const digestHex = sha256Hex(canonicalBytes);
-  const receiptId = `sha256:${digestHex}`;
-
-  // Sign the 32-byte digest
-  const digest = sha256(canonicalBytes);
-  const sigBytes = await ed.signAsync(digest, privKey);
-  const sig = `base64url:${base64urlEncode(sigBytes)}`;
+for (const def of positiveFixtures) {
+  const { canonicalJson, receiptId, sig } = await signCore(def.input);
 
   const fixture = {
-    description,
+    description: def.description,
     sar_version: '0.1',
-    input,
+    input: def.input,
     canonical_json: canonicalJson,
     receipt_id: receiptId,
-    public_key_kid: NEW_KID,
+    public_key_kid: KID,
     sig,
-    verification_steps: [
+    verification_steps: def.verification_steps || [
       '1. JCS-canonicalize `input` (RFC 8785).',
       '2. Confirm it matches `canonical_json` byte-for-byte.',
       '3. SHA256(canonical_json bytes) => receipt_id hex.',
@@ -135,10 +147,10 @@ for (const { file, description, input } of fixtures) {
   };
 
   writeFileSync(
-    resolve(FIXTURES_DIR, file),
+    resolve(FIXTURES_DIR, def.file),
     JSON.stringify(fixture, null, 2) + '\n',
   );
-  console.log(`Wrote ${file} (receipt_id: ${receiptId})`);
+  console.log(`Wrote ${def.file} (receipt_id: ${receiptId})`);
 }
 
 console.log('\nDone. Run `npm test` to verify.');

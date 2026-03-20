@@ -16,6 +16,7 @@ import {
   MalformedReceipt,
   ReceiptIdMismatch,
   InvalidSignature,
+  KeyNotFound,
 } from '../src/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -334,5 +335,48 @@ describe('SAR keys parsing', () => {
     const pubKey = resolveKidFromDocument(keysDoc, 'xmandate-ed25519-test-01');
     expect(pubKey).toBeInstanceOf(Uint8Array);
     expect(pubKey.length).toBe(32);
+  });
+
+  it('resolveKidFromDocument throws KeyNotFound for unknown kid', () => {
+    expect(() => resolveKidFromDocument(keysDoc, 'nonexistent-kid')).toThrow(
+      KeyNotFound,
+    );
+  });
+});
+
+// ============================================================
+// Inline gap tests
+// ============================================================
+
+describe('reason_code is opaque', () => {
+  it('novel reason_code signs and verifies successfully', async () => {
+    const ed = await import('@noble/ed25519');
+    const privKey = ed.utils.randomPrivateKey();
+    const pubKey = await ed.getPublicKeyAsync(privKey);
+
+    const core: SarCore = {
+      task_id_hash: 'sha256:test-novel-reason',
+      verdict: 'PASS',
+      confidence: 1,
+      reason_code: 'CUSTOM_EVALUATOR_V2',
+      ts: '2026-03-01T00:00:00Z',
+      verifier_kid: 'test-key-01',
+    };
+
+    const receipt = await signReceipt(core, { privateKey: privKey });
+    const result = await verifyReceipt(receipt, () => pubKey);
+    expect(result).toBe(true);
+  });
+});
+
+describe('wrong key rejection', () => {
+  it('valid receipt with wrong public key throws InvalidSignature', async () => {
+    const ed = await import('@noble/ed25519');
+    const wrongKey = await ed.getPublicKeyAsync(ed.utils.randomPrivateKey());
+
+    const receipt = fixtureToReceipt(passFixture);
+    await expect(
+      verifyReceipt(receipt, () => wrongKey),
+    ).rejects.toThrow(InvalidSignature);
   });
 });
