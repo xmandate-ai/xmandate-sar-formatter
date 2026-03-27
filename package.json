@@ -1,7 +1,7 @@
 {
   "name": "sar-sdk",
-  "version": "0.1.0",
-  "description": "TypeScript SDK for SAR v0.1 (Settlement Attestation Receipt) — sign, verify, and resolve portable execution proofs for agent commerce",
+  "version": "0.2.0",
+  "description": "TypeScript SDK for SAR (Settlement Attestation Receipt) — sign, verify, and resolve portable execution proofs for agent commerce. Supports v0.1 and v0.2 (counterparty).",
   "type": "module",
   "exports": {
     ".": {

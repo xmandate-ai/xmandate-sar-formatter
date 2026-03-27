@@ -54,6 +54,7 @@ export async function signReceipt(
     verifier_kid: core.verifier_kid,
     sig_alg: 'Ed25519',
     sig: 'base64url:' + base64urlEncode(sigBytes),
+    ...(opts.counterparty && { counterparty: opts.counterparty }),
     ...(opts._ext && { _ext: opts._ext }),
     ...(opts._perf && { _perf: opts._perf }),
   };
@@ -97,7 +98,7 @@ export async function verifyReceipt(
       throw new MalformedReceipt(`Missing required field: ${field}`);
     }
   }
-  if (receipt.receipt_version !== '0.1') {
+  if (receipt.receipt_version !== '0.1' && receipt.receipt_version !== '0.2') {
     throw new MalformedReceipt(
       `Unsupported receipt_version: ${receipt.receipt_version}`,
     );

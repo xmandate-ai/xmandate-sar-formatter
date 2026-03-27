@@ -14,12 +14,13 @@ export interface SarCore {
   verifier_kid: string;
 }
 
-/** Full SAR v0.1 receipt (signed, with metadata). */
+/** Full SAR receipt (signed, with metadata). */
 export interface SarReceipt extends SarCore {
   receipt_version: string;
   receipt_id: string;
   sig_alg: string;
   sig: string;
+  counterparty?: string;
   _perf?: Record<string, number>;
   _ext?: Record<string, unknown>;
 }
@@ -41,7 +42,8 @@ export interface SarKeysDocument {
 /** Options for signReceipt. */
 export interface SignOpts {
   privateKey: Uint8Array;
-  receipt_version?: '0.1';
+  receipt_version?: '0.1' | '0.2';
+  counterparty?: string;
   _ext?: Record<string, unknown>;
   _perf?: Record<string, number>;
 }

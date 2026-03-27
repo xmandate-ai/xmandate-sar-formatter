@@ -261,9 +261,16 @@ describe('input validation', () => {
     ).rejects.toThrow(MalformedReceipt);
   });
 
-  it('rejects receipt_version !== "0.1"', async () => {
+  it('accepts receipt_version "0.2"', async () => {
     const receipt = fixtureToReceipt(passFixture);
     receipt.receipt_version = '0.2';
+    const result = await verifyReceipt(receipt, localKeyResolver);
+    expect(result).toBe(true);
+  });
+
+  it('rejects unsupported receipt_version "0.3"', async () => {
+    const receipt = fixtureToReceipt(passFixture);
+    receipt.receipt_version = '0.3';
     await expect(
       verifyReceipt(receipt, localKeyResolver),
     ).rejects.toThrow(MalformedReceipt);
@@ -378,5 +385,94 @@ describe('wrong key rejection', () => {
     await expect(
       verifyReceipt(receipt, () => wrongKey),
     ).rejects.toThrow(InvalidSignature);
+  });
+});
+
+describe('v0.2 counterparty support', () => {
+  it('signReceipt with counterparty includes field in output', async () => {
+    const ed = await import('@noble/ed25519');
+    const privKey = ed.utils.randomPrivateKey();
+
+    const core: SarCore = {
+      task_id_hash: 'sha256:test-counterparty',
+      verdict: 'PASS',
+      confidence: 1,
+      reason_code: 'SPEC_MATCH',
+      ts: '2026-03-01T00:00:00Z',
+      verifier_kid: 'test-key-01',
+    };
+
+    const receipt = await signReceipt(core, {
+      privateKey: privKey,
+      receipt_version: '0.2',
+      counterparty: '0x1234567890abcdef1234567890abcdef12345678',
+    });
+
+    expect(receipt.receipt_version).toBe('0.2');
+    expect(receipt.counterparty).toBe('0x1234567890abcdef1234567890abcdef12345678');
+  });
+
+  it('counterparty does not affect receipt_id', async () => {
+    const ed = await import('@noble/ed25519');
+    const privKey = ed.utils.randomPrivateKey();
+
+    const core: SarCore = {
+      task_id_hash: 'sha256:test-counterparty-isolation',
+      verdict: 'PASS',
+      confidence: 1,
+      reason_code: 'SPEC_MATCH',
+      ts: '2026-03-01T00:00:00Z',
+      verifier_kid: 'test-key-01',
+    };
+
+    const without = await signReceipt(core, { privateKey: privKey });
+    const with_ = await signReceipt(core, {
+      privateKey: privKey,
+      receipt_version: '0.2',
+      counterparty: '0xdeadbeef',
+    });
+
+    expect(with_.receipt_id).toBe(without.receipt_id);
+  });
+
+  it('v0.2 receipt with counterparty verifies', async () => {
+    const ed = await import('@noble/ed25519');
+    const privKey = ed.utils.randomPrivateKey();
+    const pubKey = await ed.getPublicKeyAsync(privKey);
+
+    const core: SarCore = {
+      task_id_hash: 'sha256:test-v02-verify',
+      verdict: 'PASS',
+      confidence: 0.95,
+      reason_code: 'SPEC_MATCH',
+      ts: '2026-03-01T00:00:00Z',
+      verifier_kid: 'test-key-01',
+    };
+
+    const receipt = await signReceipt(core, {
+      privateKey: privKey,
+      receipt_version: '0.2',
+      counterparty: '0xabcdef',
+    });
+
+    const result = await verifyReceipt(receipt, () => pubKey);
+    expect(result).toBe(true);
+  });
+
+  it('signReceipt omits counterparty when not provided', async () => {
+    const ed = await import('@noble/ed25519');
+    const privKey = ed.utils.randomPrivateKey();
+
+    const core: SarCore = {
+      task_id_hash: 'sha256:test-no-counterparty',
+      verdict: 'PASS',
+      confidence: 1,
+      reason_code: 'SPEC_MATCH',
+      ts: '2026-03-01T00:00:00Z',
+      verifier_kid: 'test-key-01',
+    };
+
+    const receipt = await signReceipt(core, { privateKey: privKey });
+    expect(receipt.counterparty).toBeUndefined();
   });
 });
