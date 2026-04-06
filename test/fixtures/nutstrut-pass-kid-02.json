@@ -1,0 +1,30 @@
+{
+  "description": "nutstrut gist: PASS receipt signed with rotated key kid-02 (DefaultVerifier production, extracted from SettlementWitness envelope). Note: SAR core identical to pass-basic — both demonstrate kid-02.",
+  "sar_version": "0.1",
+  "source": "https://gist.github.com/nutstrut/7a0bda88164863a712a25025ad65841b",
+  "input": {
+    "task_id_hash": "sha256:e56811d9d535d8a666e50589cb7482fe26146fba2a888c5e5c155e811652df28",
+    "verdict": "PASS",
+    "confidence": 1.0,
+    "reason_code": "SPEC_MATCH",
+    "ts": "2026-04-06T05:03:57.779478Z",
+    "verifier_kid": "sar-prod-ed25519-02"
+  },
+  "receipt_id": "sha256:288d71f40ea490b00623fac02023a4b55b801bda4bccad417ddc1698af0f2ee1",
+  "public_key_kid": "sar-prod-ed25519-02",
+  "sig": "base64url:mbIYTLmzdUxjkBcrjAaotFtpw_3aMv70gRHEj5NyjrOUMuLMpG8lT3FECOna7AunN37vygEjtbHgo-IGVdVWCg",
+  "verification_steps": [
+    "1. JCS-canonicalize `input` (RFC 8785).",
+    "2. SHA256(canonical_json bytes) => receipt_id hex.",
+    "3. Verify Ed25519 signature over the hash bytes using sar-prod-ed25519-02 from dv-prod-sar-keys.json.",
+    "4. Confirm _ext.operation_binding does not affect receipt_id or signature."
+  ],
+  "_ext": {
+    "operation_binding": {
+      "operation_digest": "sha256:8f5c7e0c11111111111111111111111111111111111111111111111111111111",
+      "operation_id": "search.run",
+      "resource_url": "https://api.example.com/search",
+      "schema_id": "x402-operation-binding/v1"
+    }
+  }
+}

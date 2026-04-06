@@ -604,3 +604,128 @@ describe('key rotation', () => {
     ).rejects.toThrow(InvalidSignature);
   });
 });
+
+// ── nutstrut DefaultVerifier vectors (cross-implementation) ──
+
+const dvKeysDoc = loadFixture('dv-prod-sar-keys.json') as unknown as SarKeysDocument;
+
+function dvKeyResolver(kid: string): Uint8Array {
+  return resolveKidFromDocument(dvKeysDoc, kid);
+}
+
+const nutPASS = loadFixture('nutstrut-pass-basic.json');
+const nutINDET = loadFixture('nutstrut-indeterminate-ambiguous.json');
+const nutKID02 = loadFixture('nutstrut-pass-kid-02.json');
+const nutUNKNOWN = loadFixture('nutstrut-negative-unknown-schema.json');
+
+const NUTSTRUT_FIXTURES = [
+  { name: 'pass-basic', fixture: nutPASS },
+  { name: 'indeterminate-ambiguous', fixture: nutINDET },
+  { name: 'pass-kid-02', fixture: nutKID02 },
+  { name: 'negative-unknown-schema', fixture: nutUNKNOWN },
+] as const;
+
+describe('nutstrut DefaultVerifier vectors (cross-implementation)', () => {
+
+  for (const { name, fixture } of NUTSTRUT_FIXTURES) {
+    describe(name, () => {
+      const input = fixture.input as SarCore;
+      const expectedReceiptId = fixture.receipt_id as string;
+
+      it('deriveReceiptId matches fixture receipt_id', () => {
+        const receiptId = deriveReceiptId(input);
+        expect(receiptId).toBe(expectedReceiptId);
+      });
+
+      it('verifyReceipt succeeds with DefaultVerifier production keys', async () => {
+        const receipt = fixtureToReceipt(fixture);
+        const result = await verifyReceipt(receipt, dvKeyResolver);
+        expect(result).toBe(true);
+      });
+    });
+  }
+
+  it('indeterminate-ambiguous canonical_json matches byte-for-byte', () => {
+    const input = nutINDET.input as SarCore;
+    const coreBytes = canonicalizeCore(input);
+    const canonical = new TextDecoder().decode(coreBytes);
+    const expected = nutINDET.canonical_json as string;
+    if (expected) {
+      expect(canonical).toBe(expected);
+    }
+  });
+
+  describe('_ext.operation_binding isolation', () => {
+    it('receipt_id unchanged with _ext present', () => {
+      const input = nutPASS.input as SarCore;
+      const ext = nutPASS._ext as Record<string, unknown>;
+      const baseId = deriveReceiptId(input);
+      const withExtId = deriveReceiptId({ ...input, _ext: ext } as SarCore);
+      expect(withExtId).toBe(baseId);
+    });
+
+    it('verifyReceipt passes when _ext.operation_binding is attached', async () => {
+      const receipt = fixtureToReceipt(nutPASS);
+      receipt._ext = nutPASS._ext as Record<string, unknown>;
+      const result = await verifyReceipt(receipt, dvKeyResolver);
+      expect(result).toBe(true);
+    });
+
+    it('verifyReceipt passes when _ext.operation_binding is stripped', async () => {
+      const receipt = fixtureToReceipt(nutPASS);
+      delete receipt._ext;
+      const result = await verifyReceipt(receipt, dvKeyResolver);
+      expect(result).toBe(true);
+    });
+
+    it('verifyReceipt passes when _ext.operation_binding is modified', async () => {
+      const receipt = fixtureToReceipt(nutPASS);
+      receipt._ext = {
+        operation_binding: {
+          operation_digest: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          operation_id: 'completely.different',
+          resource_url: 'https://other.example.com/different',
+          schema_id: 'x402-operation-binding/v42',
+        },
+      };
+      const result = await verifyReceipt(receipt, dvKeyResolver);
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('unknown schema_id', () => {
+    it('SAR verification passes regardless of schema_id value', async () => {
+      const receipt = fixtureToReceipt(nutUNKNOWN);
+      receipt._ext = nutUNKNOWN._ext as Record<string, unknown>;
+      const result = await verifyReceipt(receipt, dvKeyResolver);
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('key rotation across DefaultVerifier keys', () => {
+    it('indeterminate-ambiguous uses kid-01', () => {
+      expect((nutINDET.input as SarCore).verifier_kid).toBe('sar-prod-ed25519-01');
+    });
+
+    it('pass-basic uses kid-02', () => {
+      expect((nutPASS.input as SarCore).verifier_kid).toBe('sar-prod-ed25519-02');
+    });
+
+    it('both keys resolve from DefaultVerifier keys document', () => {
+      const key1 = dvKeyResolver('sar-prod-ed25519-01');
+      const key2 = dvKeyResolver('sar-prod-ed25519-02');
+      expect(key1).toBeInstanceOf(Uint8Array);
+      expect(key2).toBeInstanceOf(Uint8Array);
+      expect(key1.length).toBe(32);
+      expect(key2.length).toBe(32);
+      expect(Buffer.from(key1).toString('hex')).not.toBe(Buffer.from(key2).toString('hex'));
+    });
+
+    it('kid-01 receipt fails verification when verifier_kid is changed to kid-02', async () => {
+      const receipt = fixtureToReceipt(nutINDET);
+      receipt.verifier_kid = 'sar-prod-ed25519-02';
+      await expect(verifyReceipt(receipt, dvKeyResolver)).rejects.toThrow();
+    });
+  });
+
+}); // close 'nutstrut DefaultVerifier vectors'
